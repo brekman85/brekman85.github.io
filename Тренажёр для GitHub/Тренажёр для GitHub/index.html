@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Геометрия 9 — тренажёр</title>
+<!-- Тренажёр для Надежды (16.10.2026). Темы 9 класса по учебнику «Геометрия 7–9» (базовый уровень) + задачи как в ОГЭ.
+     Задачи генерируются программой, ответы вычисляются (не «из головы»). Прогресс — только в этом телефоне. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{--bg:#eef3fb;--card:#fff;--fg:#1c2433;--mut:#66708a;--acc:#2f6fd6;--ok:#1f9d55;--bad:#d64545}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.45 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+  .wrap{max-width:560px;margin:0 auto} h1{font-size:23px;margin:0} .mut{color:var(--mut);font-size:14px}
+  .top{display:flex;justify-content:space-between;align-items:center} .pts{font-size:19px;font-weight:800;color:var(--acc)}
+  .card{background:var(--card);border-radius:16px;padding:16px;margin-top:12px;box-shadow:0 2px 10px rgba(30,60,120,.08)}
+  .t{display:flex;justify-content:space-between;align-items:center;padding:12px;border:2px solid #dbe4f3;border-radius:12px;margin-top:8px;cursor:pointer;background:#fff;width:100%;font:inherit;text-align:left}
+  .t b{font-weight:700} .t small{color:var(--mut)} .bar{height:8px;background:#e1e8f5;border-radius:5px;margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+  .q{font-size:19px;font-weight:600;margin:6px 0 10px;white-space:pre-line} svg{display:block;margin:6px auto 10px;max-width:100%}
+  input{width:100%;font-size:21px;padding:11px;border:2px solid #cfdaee;border-radius:12px}
+  .row{display:flex;gap:8px;margin-top:10px}.row>*{flex:1}
+  button.b{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px;background:var(--acc);color:#fff;cursor:pointer} button.g{background:#e3ecfb;color:var(--acc)}
+  .ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}.hint{background:#fff7db;border-radius:12px;padding:10px;margin-top:10px;font-size:15px;white-space:pre-line}
+  .theory{background:#eef5ff;border-radius:12px;padding:10px;margin-top:10px;font-size:15px;white-space:pre-line}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><h1>📐 Геометрия 9</h1><div class="pts" id="pts">0 ⭐</div></div>
+<div class="mut" id="hello">Темы 9 класса и задачи как в ОГЭ. Ответ — число; если нужен корень, пиши десятичной дробью (2√3 ≈ 3,46).</div>
+
+<div id="menu"></div>
+
+<div class="card" id="play" hidden>
+  <div class="top"><span class="mut" id="meta"></span><button class="b g" id="back">← Темы</button></div>
+  <div id="pic"></div>
+  <div class="q" id="q"></div>
+  <input id="a" inputmode="decimal" autocomplete="off" placeholder="Ответ">
+  <div class="row"><button class="b" id="check">Проверить</button><button class="b g" id="hintB">Подсказка</button></div>
+  <div id="res" style="margin-top:10px"></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="theory" id="theory" hidden></div>
+  <button class="b" id="next" hidden style="width:100%;margin-top:10px">Дальше →</button>
+</div>
+<p class="mut" style="margin-top:14px">Готовых ответов на домашку тренажёр не даёт — только похожие задачи и разбор.</p>
+</div>
+<script>
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)), pick=a=>a[R(0,a.length-1)], r2=x=>Math.round(x*100)/100;
+const rad=d=>d*Math.PI/180, sin=d=>Math.sin(rad(d)), cos=d=>Math.cos(rad(d));
+const fmt=x=>String(r2(x)).replace('.',',');
+const tri=(lbl)=>`<svg width="260" height="150" viewBox="0 0 260 150"><polygon points="20,130 240,130 70,20" fill="#eef4ff" stroke="#2f6fd6" stroke-width="3"/><text x="8" y="146" font-size="16">A</text><text x="242" y="146" font-size="16">B</text><text x="64" y="15" font-size="16">C</text>${lbl||''}</svg>`;
+const rtri=`<svg width="260" height="150" viewBox="0 0 260 150"><polygon points="20,130 240,130 20,20" fill="#eef4ff" stroke="#2f6fd6" stroke-width="3"/><rect x="20" y="114" width="16" height="16" fill="none" stroke="#2f6fd6"/><text x="6" y="146" font-size="16">C</text><text x="242" y="146" font-size="16">B</text><text x="6" y="18" font-size="16">A</text></svg>`;
+const T={
+ trig:{name:'Синус, косинус, тангенс',th:'В прямоугольном треугольнике:\nsin A = противолежащий катет / гипотенуза\ncos A = прилежащий катет / гипотенуза\ntg A = противолежащий / прилежащий\nsin²α + cos²α = 1',
+  gen(){const k=pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17],[7,24,25]]),m=R(1,3),[a,b,c]=k.map(x=>x*m);const v=R(0,2);
+   if(v===0)return{pic:rtri,q:`В треугольнике ABC угол C = 90°, BC = ${a}, AB = ${c}.\nНайдите sin A.`,a:a/c,h:`sin A = BC / AB = ${a}/${c}.`};
+   if(v===1)return{pic:rtri,q:`В треугольнике ABC угол C = 90°, AC = ${b}, AB = ${c}.\nНайдите cos A.`,a:b/c,h:`cos A = AC / AB = ${b}/${c}.`};
+   const s=pick([[3,5,4],[5,13,12],[8,17,15],[7,25,24]]);return{q:`sin α = ${s[0]}/${s[1]}, угол α острый.\nНайдите cos α.`,a:s[2]/s[1],h:`cos α = √(1 − sin²α) = √(1 − ${s[0]*s[0]}/${s[1]*s[1]}) = ${s[2]}/${s[1]}.`};}},
+ sq:{name:'Площадь треугольника через синус',th:'S = ½ · a · b · sin C — половина произведения двух сторон на синус угла между ними.\nsin 30° = 0,5;  sin 45° ≈ 0,71;  sin 60° ≈ 0,87;  sin 150° = 0,5',
+  gen(){const a=R(4,16),b=R(4,16),C=pick([30,150,90]);return{pic:tri(),q:`В треугольнике ABC: AC = ${a}, BC = ${b}, угол C = ${C}°.\nНайдите площадь треугольника.`,a:0.5*a*b*sin(C),h:`S = ½ · ${a} · ${b} · sin ${C}° = ½ · ${a} · ${b} · ${fmt(sin(C))}.`};}},
+ cos:{name:'Теорема косинусов',th:'c² = a² + b² − 2ab · cos C\ncos 60° = 0,5;  cos 120° = −0,5;  cos 90° = 0',
+  gen(){const a=R(3,12),b=R(3,12),C=pick([60,120,90]);const c2=a*a+b*b-2*a*b*cos(C);return{pic:tri(),q:`В треугольнике ABC: AC = ${a}, BC = ${b}, угол C = ${C}°.\nНайдите AB². (В ответе — квадрат стороны)`,a:c2,h:`AB² = ${a}² + ${b}² − 2·${a}·${b}·cos ${C}° = ${a*a} + ${b*b} − ${2*a*b}·(${fmt(cos(C))}).`};}},
+ sin:{name:'Теорема синусов',th:'a / sin A = b / sin B = c / sin C = 2R\n(R — радиус описанной окружности)',
+  gen(){const v=R(0,1);if(v===0){const R0=R(2,12),A=pick([30,90,150]);return{pic:tri(),q:`Радиус описанной окружности треугольника ABC равен ${R0}, угол A = ${A}°.\nНайдите сторону BC.`,a:2*R0*sin(A),h:`BC = 2R · sin A = 2 · ${R0} · sin ${A}°.`};}
+   const a=R(2,10)*2;return{pic:tri(),q:`В треугольнике ABC: BC = ${a}, угол A = 30°.\nНайдите радиус описанной окружности.`,a:a,h:`2R = BC / sin A = ${a} / 0,5 = ${2*a}, значит R = ${a}.`};}},
+ vec:{name:'Векторы и координаты',th:'Вектор AB = (x₂ − x₁; y₂ − y₁)\nДлина |a| = √(x² + y²)\nСередина отрезка: ((x₁ + x₂)/2; (y₁ + y₂)/2)\nСкалярное произведение: a·b = x₁x₂ + y₁y₂',
+  gen(){const v=R(0,3);const x1=R(-6,6),y1=R(-6,6);
+   if(v===0){const k=pick([[3,4],[6,8],[5,12],[8,6],[-3,4],[0,7]]);return{q:`A(${x1}; ${y1}), B(${x1+k[0]}; ${y1+k[1]}).\nНайдите длину вектора AB.`,a:Math.hypot(k[0],k[1]),h:`AB = (${k[0]}; ${k[1]}), |AB| = √(${k[0]}² + ${k[1]}²).`};}
+   if(v===1){const x2=x1+2*R(-4,4),y2=y1+2*R(-4,4);return{q:`A(${x1}; ${y1}), B(${x2}; ${y2}).\nНайдите абсциссу (x) середины отрезка AB.`,a:(x1+x2)/2,h:`x = (${x1} + ${x2}) / 2.`};}
+   if(v===2){const a=[R(-5,5),R(-5,5)],b=[R(-5,5),R(-5,5)];return{q:`a = (${a[0]}; ${a[1]}), b = (${b[0]}; ${b[1]}).\nНайдите скалярное произведение a · b.`,a:a[0]*b[0]+a[1]*b[1],h:`a·b = ${a[0]}·${b[0]} + ${a[1]}·${b[1]}.`};}
+   const a=[R(-5,5),R(-5,5)],k=R(2,4);return{q:`a = (${a[0]}; ${a[1]}). Вектор b = ${k}a.\nНайдите сумму координат вектора b.`,a:k*(a[0]+a[1]),h:`b = (${k*a[0]}; ${k*a[1]}).`};}},
+ circ:{name:'Окружность и правильные многоугольники',th:'Длина окружности C = 2πR, площадь круга S = πR².\nДлина дуги в n°: πRn/180.\nСумма углов n-угольника: 180°·(n − 2).\nУ правильного шестиугольника сторона равна радиусу описанной окружности.',
+  gen(){const v=R(0,3);
+   if(v===0){const r=R(2,15);return{q:`Радиус окружности равен ${r}.\nНайдите длину окружности, делённую на π.`,a:2*r,h:`C = 2πR = ${2*r}π.`};}
+   if(v===1){const r=R(2,12);return{q:`Радиус круга равен ${r}.\nНайдите площадь круга, делённую на π.`,a:r*r,h:`S = πR² = ${r*r}π.`};}
+   if(v===2){const n=R(5,12);return{q:`Найдите угол правильного ${n}-угольника (в градусах).`,a:180*(n-2)/n,h:`Сумма углов = 180°·(${n} − 2) = ${180*(n-2)}°, один угол = ${180*(n-2)}° / ${n}.`};}
+   const a=R(3,15);return{q:`Сторона правильного шестиугольника равна ${a}.\nНайдите радиус описанной окружности.`,a:a,h:'У правильного шестиугольника R = стороне.'};}},
+ oge:{name:'Смешанные задачи (как в ОГЭ)',th:'Площади: треугольник ½·a·h, параллелограмм a·h, трапеция ½(a + b)·h, ромб ½·d₁·d₂.\nТеорема Пифагора: c² = a² + b².\nВписанный угол = половине дуги, центральный = дуге.',
+  gen(){const v=R(0,3);
+   if(v===0){const a=R(3,12),b=a+R(2,10),h=R(2,10);return{q:`Основания трапеции равны ${a} и ${b}, высота ${h}.\nНайдите площадь трапеции.`,a:(a+b)*h/2,h:`S = ½ · (${a} + ${b}) · ${h}.`};}
+   if(v===1){const d1=R(4,20),d2=R(4,20);return{q:`Диагонали ромба равны ${d1} и ${d2}.\nНайдите площадь ромба.`,a:d1*d2/2,h:`S = ½ · ${d1} · ${d2}.`};}
+   if(v===2){const k=R(20,170);return{q:`Дуга окружности AB равна ${2*k}°.
+Найдите вписанный угол, опирающийся на эту дугу.`,a:k,h:`Вписанный угол = половина дуги = ${2*k}° / 2.`};}
+   const k=pick([[3,4,5],[5,12,13],[6,8,10],[9,12,15],[8,15,17]]);return{pic:rtri,q:`Катеты прямоугольного треугольника равны ${k[0]} и ${k[1]}.\nНайдите гипотенузу.`,a:k[2],h:`c = √(${k[0]}² + ${k[1]}²) = √${k[0]*k[0]+k[1]*k[1]}.`};}}
+};
+let S;try{S=JSON.parse(localStorage.getItem('geo9'))}catch(e){} S=S||{pts:0,done:{},ok:{}};const save=()=>{try{localStorage.setItem('geo9',JSON.stringify(S))}catch(e){}};
+const tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand();const u=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(u&&u.first_name)document.getElementById('hello').textContent=u.first_name+', выбери тему. Ответ — число, корни пиши десятичной дробью.'}
+let mode,cur,answered,streak=0,mix=null,sess={start:Date.now(),done:0,ok:0,bad:{}};
+function menu(){document.getElementById('pts').textContent=S.pts+' ⭐';document.getElementById('menu').innerHTML='<div class="card"><b>Темы</b> <span class="mut">— нажми на тему или отметь несколько ☑ и жми «Тренировка»</span>'+Object.entries(T).map(([k,t])=>{const d=S.done[k]||0,o=S.ok[k]||0;return`<div style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="sel" value="${k}" style="width:26px;height:26px;flex:none"><button class="t" data-k="${k}"><span><b>${t.name}</b><br><small>решено ${o} из ${d}${d?` · ${Math.round(o/d*100)}%`:''}</small></span><span>›</span></button></div><div class="bar"><i style="width:${d?Math.round(o/d*100):0}%"></i></div>`}).join('')+'<div class="row"><button class="b" id="mix">▶ Тренировка по отмеченным</button></div><div class="mut" id="repInfo" style="margin-top:6px"></div><div class="mut" style="margin-top:8px">📨 Отчёт папе уходит сам.</div></div>';
+ document.getElementById('mix').onclick=()=>{const ks=[...document.querySelectorAll('.sel:checked')].map(x=>x.value);if(!ks.length){document.getElementById('repInfo').textContent='Отметь хотя бы одну тему ☑';return}mix=ks;mode=null;streak=0;document.getElementById('menu').hidden=true;document.getElementById('play').hidden=false;ask()};
+ }
+function ask(){if(mix)mode=pick(mix);cur=T[mode].gen();answered=false;document.getElementById('meta').textContent=T[mode].name+(streak?` · серия ${streak}`:'');
+ document.getElementById('pic').innerHTML=cur.pic||'';document.getElementById('q').textContent=cur.q;const a=document.getElementById('a');a.value='';a.focus();
+ document.getElementById('res').innerHTML='';['hint','theory','next'].forEach(i=>document.getElementById(i).hidden=true);document.getElementById('check').disabled=false}
+function check(){if(answered)return;const v=parseFloat(String(document.getElementById('a').value).replace(',','.').replace(/\s/g,''));if(isNaN(v)){document.getElementById('res').innerHTML='<span class="bad">Напиши число.</span>';return}
+ answered=true;const ok=Math.abs(v-cur.a)<=Math.max(0.02,Math.abs(cur.a)*0.01);S.done[mode]=(S.done[mode]||0)+1;
+ sess.done++;if(sess.done%10===0)setTimeout(autoReport,0);if(ok){S.ok[mode]=(S.ok[mode]||0)+1;S.pts++;streak++;sess.ok++}else{streak=0;sess.bad[mode]=(sess.bad[mode]||0)+1};S.log=(S.log||[]).concat([[Date.now(),mode,ok?1:0]]).slice(-500);save();document.getElementById('pts').textContent=S.pts+' ⭐';
+ document.getElementById('res').innerHTML=ok?'<span class="ok">Верно! +1 ⭐</span>':`<span class="bad">Пока нет. Ответ: ${fmt(cur.a)}</span>`;
+ if(!ok){const h=document.getElementById('hint');h.hidden=false;h.textContent='Как решать: '+cur.h;const th=document.getElementById('theory');th.hidden=false;th.textContent='Теория:\n'+T[mode].th}
+ document.getElementById('next').hidden=false}
+document.getElementById('menu').onclick=e=>{const b=e.target.closest('.t');if(!b)return;mix=null;mode=b.dataset.k;streak=0;document.getElementById('menu').hidden=true;document.getElementById('play').hidden=false;ask()};
+document.getElementById('check').onclick=check;document.getElementById('a').onkeydown=e=>{if(e.key==='Enter')answered?ask():check()};
+document.getElementById('next').onclick=ask;document.getElementById('hintB').onclick=()=>{const h=document.getElementById('hint');h.hidden=false;h.textContent='Подсказка: '+cur.h;const th=document.getElementById('theory');th.hidden=false;th.textContent='Теория:\n'+T[mode].th};
+document.getElementById('back').onclick=()=>{autoReport();document.getElementById('play').hidden=true;document.getElementById('menu').hidden=false;menu()};
+function reportText(){const NL=String.fromCharCode(10);const mins=Math.round((Date.now()-sess.start)/60000);
+ const lines=Object.entries(T).filter(([k])=>S.done[k]).map(([k,t])=>'• '+t.name+': '+(S.ok[k]||0)+' из '+S.done[k]+' ('+Math.round((S.ok[k]||0)/S.done[k]*100)+'%)');
+ const weak=Object.entries(sess.bad).sort((a,b)=>b[1]-a[1]).map(([k,n])=>T[k].name+' — '+n+' ош.');
+ return ['Отчёт «Геометрия 9»','За это занятие: '+sess.done+' задач, верно '+sess.ok+', ~'+mins+' мин.'].concat(weak.length?['Ошибки: '+weak.join('; ')]:[]).concat(['Всего по темам:']).concat(lines.length?lines:['пока нет']).join(NL)}
+// Отчёт уходит сам: бот-почтальон (умеет только писать папе) — каждые 10 задач, при выходе в меню и при закрытии.
+const PB='8815141256:AAFhUAO3qY1FfiiYFEKpQeyb24Kw84a_v9g',PAPA='397391384';let sentAt=0;
+function autoReport(){if(sess.done<=sentAt||PB.indexOf('__')===0)return;sentAt=sess.done;
+ const body=new URLSearchParams({chat_id:PAPA,text:'📐 '+reportText()});const url='https://api.telegram.org/bot'+PB+'/sendMessage';
+ try{if(navigator.sendBeacon&&navigator.sendBeacon(url,body))return}catch(e){}
+ try{fetch(url,{method:'POST',body,mode:'no-cors',keepalive:true})}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autoReport()});
+addEventListener('pagehide',autoReport);
+menu();
+</script>
+</body>
+</html>
