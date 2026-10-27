@@ -22,11 +22,14 @@
   button.b{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px;background:var(--acc);color:#fff;cursor:pointer} button.g{background:#e3ecfb;color:var(--acc)}
   .ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}.hint{background:#fff7db;border-radius:12px;padding:10px;margin-top:10px;font-size:15px;white-space:pre-line}
   .theory{background:#eef5ff;border-radius:12px;padding:10px;margin-top:10px;font-size:15px;white-space:pre-line}
+  .pig{background:linear-gradient(135deg,#fff4d6,#ffe9b3);border-radius:16px;padding:14px 16px;margin-top:12px;box-shadow:0 2px 10px rgba(160,110,0,.15)}
+  .pig .big{font-size:30px;font-weight:800;color:#8a5a00}.pig .bar{background:#f3dca0}.pig .bar i{background:#e59a00}
+  .pig .mut{color:#8a6a2a}
   [hidden]{display:none!important}
 </style>
 </head>
 <body><div class="wrap">
-<div class="top"><h1>📐 Геометрия 9</h1><div class="pts" id="pts">0 ⭐</div></div>
+<div class="top"><h1>📐 Геометрия 9</h1><div class="pts" id="pts">0 ₽</div></div>
 <div class="mut" id="hello">Темы 9 класса и задачи как в ОГЭ. Ответ — число; если нужен корень, пиши десятичной дробью (2√3 ≈ 3,46).</div>
 
 <div id="menu"></div>
@@ -156,9 +159,21 @@ const T={
    const BD=R(2,6),BA=BD+R(1,6),AC=BA*R(1,3);return{pic:tri(),q:`В треугольнике ABC на стороне AB отмечена точка D, на стороне BC — точка E, причём DE ∥ AC. BD = ${BD}, BA = ${BA}, AC = ${AC}.\nНайдите DE.`,a:AC*BD/BA,h:`Треугольники BDE и BAC подобны, k = BD / BA = ${BD}/${BA}. DE = k·AC.`};}}
 };
 let S;try{S=JSON.parse(localStorage.getItem('geo9'))}catch(e){} S=S||{pts:0,done:{},ok:{}};const save=()=>{try{localStorage.setItem('geo9',JSON.stringify(S))}catch(e){}};
+// Копилка (виртуальные рубли): +10 ₽ за верный ответ, +50 ₽ за каждые 5 верных подряд. За ошибки ничего не снимается.
+const RUB=10,BONUS=5,BONUS_RUB=50,GOAL=500;
+if(S.rub===undefined)S.rub=S.pts*RUB; // старые звёзды переводятся в рубли, прогресс не теряется
+const weekKey=()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function wk(){const k=weekKey();if(!S.wk||S.wk.k!==k){if(S.wk&&S.wk.done){S.prev=S.wk}S.wk={k:k,done:0,ok:0,rub:0}}return S.wk}
 const tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand();const u=tg.initDataUnsafe&&tg.initDataUnsafe.user;if(u&&u.first_name)document.getElementById('hello').textContent=u.first_name+', выбери тему. Ответ — число, корни пиши десятичной дробью.'}
 let mode,cur,answered,streak=0,mix=null,sess={start:Date.now(),done:0,ok:0,bad:{}};
-function menu(){document.getElementById('pts').textContent=S.pts+' ⭐';document.getElementById('menu').innerHTML='<div class="card"><b>Темы</b> <span class="mut">— нажми на тему или отметь несколько ☑ и жми «Тренировка»</span>'+Object.entries(T).map(([k,t])=>{const d=S.done[k]||0,o=S.ok[k]||0;return`<div style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="sel" value="${k}" style="width:26px;height:26px;flex:none"><button class="t" data-k="${k}"><span><b>${t.name}</b><br><small>решено ${o} из ${d}${d?` · ${Math.round(o/d*100)}%`:''}</small></span><span>›</span></button></div><div class="bar"><i style="width:${d?Math.round(o/d*100):0}%"></i></div>`}).join('')+'<div class="row"><button class="b" id="mix">▶ Тренировка по отмеченным</button></div><div class="mut" id="repInfo" style="margin-top:6px"></div></div>';
+function pig(){const w=wk(),p=Math.min(100,Math.round(w.rub/GOAL*100));
+ const prev=S.prev?`<div class="mut" style="margin-top:6px">Прошлая неделя: ${S.prev.rub} ₽ (верно ${S.prev.ok} из ${S.prev.done})</div>`:'';
+ return`<div class="pig"><div class="mut">🐷 Копилка</div><div class="big">${S.rub} ₽</div>
+ <div class="mut" style="margin-top:6px">Эта неделя: <b>${w.rub} ₽</b> · верно ${w.ok} из ${w.done}</div>
+ <div class="bar"><i style="width:${p}%"></i></div>
+ <div class="mut" style="margin-top:4px">${w.rub>=GOAL?'🎉 Цель недели выполнена — '+GOAL+' ₽!':'Цель недели: '+GOAL+' ₽ (ещё '+(GOAL-w.rub)+' ₽)'}</div>${prev}
+ <div class="mut" style="margin-top:6px;font-size:13px">+${RUB} ₽ за верный ответ, +${BONUS_RUB} ₽ за каждые ${BONUS} верных подряд. За ошибки рубли не отнимаются. Рубли виртуальные.</div></div>`}
+function menu(){document.getElementById('pts').textContent=S.rub+' ₽';document.getElementById('menu').innerHTML=pig()+'<div class="card"><b>Темы</b> <span class="mut">— нажми на тему или отметь несколько ☑ и жми «Тренировка»</span>'+Object.entries(T).map(([k,t])=>{const d=S.done[k]||0,o=S.ok[k]||0;return`<div style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="sel" value="${k}" style="width:26px;height:26px;flex:none"><button class="t" data-k="${k}"><span><b>${t.name}</b><br><small>решено ${o} из ${d}${d?` · ${Math.round(o/d*100)}%`:''}</small></span><span>›</span></button></div><div class="bar"><i style="width:${d?Math.round(o/d*100):0}%"></i></div>`}).join('')+'<div class="row"><button class="b" id="mix">▶ Тренировка по отмеченным</button></div><div class="mut" id="repInfo" style="margin-top:6px"></div></div>';
  document.getElementById('mix').onclick=()=>{const ks=[...document.querySelectorAll('.sel:checked')].map(x=>x.value);if(!ks.length){document.getElementById('repInfo').textContent='Отметь хотя бы одну тему ☑';return}mix=ks;mode=null;streak=0;document.getElementById('menu').hidden=true;document.getElementById('play').hidden=false;ask()};
  }
 function ask(){if(mix)mode=pick(mix);cur=T[mode].gen();answered=false;document.getElementById('meta').textContent=T[mode].name+(streak?` · серия ${streak}`:'');
@@ -166,8 +181,9 @@ function ask(){if(mix)mode=pick(mix);cur=T[mode].gen();answered=false;document.g
  document.getElementById('res').innerHTML='';['hint','theory','next'].forEach(i=>document.getElementById(i).hidden=true);document.getElementById('check').disabled=false}
 function check(){if(answered)return;const v=parseFloat(String(document.getElementById('a').value).replace(',','.').replace(/\s/g,''));if(isNaN(v)){document.getElementById('res').innerHTML='<span class="bad">Напиши число.</span>';return}
  answered=true;const ok=Math.abs(v-cur.a)<=Math.max(0.02,Math.abs(cur.a)*0.01);S.done[mode]=(S.done[mode]||0)+1;
- sess.done++;if(sess.done%10===0)setTimeout(autoReport,0);if(ok){S.ok[mode]=(S.ok[mode]||0)+1;S.pts++;streak++;sess.ok++}else{streak=0;sess.bad[mode]=(sess.bad[mode]||0)+1};S.log=(S.log||[]).concat([[Date.now(),mode,ok?1:0]]).slice(-500);save();document.getElementById('pts').textContent=S.pts+' ⭐';
- document.getElementById('res').innerHTML=ok?'<span class="ok">Верно! +1 ⭐</span>':`<span class="bad">Пока нет. Ответ: ${fmt(cur.a)}</span>`;
+ sess.done++;if(sess.done%10===0)setTimeout(autoReport,0);const w=wk();let earn=0,bonus=false;w.done++;
+ if(ok){S.ok[mode]=(S.ok[mode]||0)+1;S.pts++;streak++;sess.ok++;earn=RUB;if(streak%BONUS===0){earn+=BONUS_RUB;bonus=true}S.rub+=earn;w.ok++;w.rub+=earn;sess.rub=(sess.rub||0)+earn}else{streak=0;sess.bad[mode]=(sess.bad[mode]||0)+1};S.log=(S.log||[]).concat([[Date.now(),mode,ok?1:0]]).slice(-500);save();document.getElementById('pts').textContent=S.rub+' ₽';
+ document.getElementById('res').innerHTML=ok?`<span class="ok">Верно! +${RUB} ₽${bonus?` · 🔥 ${streak} подряд, бонус +${BONUS_RUB} ₽`:''}</span>`:`<span class="bad">Пока нет. Ответ: ${fmt(cur.a)}</span>`;
  if(!ok){const h=document.getElementById('hint');h.hidden=false;h.textContent='Как решать: '+cur.h;const th=document.getElementById('theory');th.hidden=false;th.textContent='Теория:\n'+T[mode].th}
  document.getElementById('next').hidden=false}
 document.getElementById('menu').onclick=e=>{const b=e.target.closest('.t');if(!b)return;mix=null;mode=b.dataset.k;streak=0;document.getElementById('menu').hidden=true;document.getElementById('play').hidden=false;ask()};
@@ -177,7 +193,7 @@ document.getElementById('back').onclick=()=>{autoReport();document.getElementByI
 function reportText(){const NL=String.fromCharCode(10);const mins=Math.round((Date.now()-sess.start)/60000);
  const lines=Object.entries(T).filter(([k])=>S.done[k]).map(([k,t])=>'• '+t.name+': '+(S.ok[k]||0)+' из '+S.done[k]+' ('+Math.round((S.ok[k]||0)/S.done[k]*100)+'%)');
  const weak=Object.entries(sess.bad).sort((a,b)=>b[1]-a[1]).map(([k,n])=>T[k].name+' — '+n+' ош.');
- return ['Отчёт «Геометрия 9»','За это занятие: '+sess.done+' задач, верно '+sess.ok+', ~'+mins+' мин.'].concat(weak.length?['Ошибки: '+weak.join('; ')]:[]).concat(['Всего по темам:']).concat(lines.length?lines:['пока нет']).join(NL)}
+ return ['Отчёт «Геометрия 9»','За это занятие: '+sess.done+' задач, верно '+sess.ok+', ~'+mins+' мин. Заработано '+(sess.rub||0)+' ₽ (копилка '+S.rub+' ₽, за неделю '+wk().rub+' из '+GOAL+' ₽).'].concat(weak.length?['Ошибки: '+weak.join('; ')]:[]).concat(['Всего по темам:']).concat(lines.length?lines:['пока нет']).join(NL)}
 // Отчёт уходит сам: бот-почтальон (умеет только писать папе) — каждые 10 задач, при выходе в меню и при закрытии.
 const PB='8815141256:AAFhUAO3qY1FfiiYFEKpQeyb24Kw84a_v9g',PAPA='397391384';let sentAt=0;
 function autoReport(){if(sess.done<=sentAt||PB.indexOf('__')===0)return;sentAt=sess.done;
